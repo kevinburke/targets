@@ -1,0 +1,14 @@
+Temp
+Library
+
+ExportedObj
+obj/
+
+*.svd
+*.userprefs
+/*.csproj
+*.pidb
+*.suo
+/*.sln
+*.unityproj
+*.user
