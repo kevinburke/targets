@@ -10,10 +10,16 @@ Platform assembly: C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\Un
 Loading C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\UnityEngine.dll into Unity Child Domain
 Platform assembly: C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\Assembly-CSharp.dll (this message is harmless)
 Loading C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\Assembly-CSharp.dll into Unity Child Domain
-- Completed reload, in  0.043 seconds
+Platform assembly: C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\Assembly-UnityScript.dll (this message is harmless)
+Loading C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\Assembly-UnityScript.dll into Unity Child Domain
+- Completed reload, in  0.033 seconds
 <RI> Initializing input.
 <RI> Input initialized.
 desktop: 1920x1080 60Hz; virtual: 1920x1080 at 0,0
+Hello from the Start script.
+ 
+(Filename: C:/BuildAgent/work/d63dfc6385190b60/artifacts/StandalonePlayerGenerated/UnityEngineDebug.cpp Line: 49)
+
 Platform assembly: C:\Users\Kevin\Documents\code\targets\Targets_Data\Managed\System.dll (this message is harmless)
 NullReferenceException: Object reference not set to an instance of an object
   at System.String.memcpy4 (System.Byte* dest, System.Byte* src, Int32 size) [0x00000] in <filename unknown>:0 
@@ -25,4 +31,12 @@ NullReferenceException: Object reference not set to an instance of an object
   at OVRMainMenu.Start () [0x00000] in <filename unknown>:0 
  
 (Filename:  Line: -1)
+
+The first frame.
+ 
+(Filename: C:/BuildAgent/work/d63dfc6385190b60/artifacts/StandalonePlayerGenerated/UnityEngineDebug.cpp Line: 49)
+
+-10054
+ 
+(Filename: C:/BuildAgent/work/d63dfc6385190b60/artifacts/StandalonePlayerGenerated/UnityEngineDebug.cpp Line: 49)
 
