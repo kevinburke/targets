@@ -24,32 +24,34 @@ public class TargetScript : MonoBehaviour {
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
 
-	void createTarget(Vector3 cameraPosition) {
-		target = GameObject.CreatePrimitive(PrimitiveType.Quad);
-		target.renderer.material.color = red;
-		target.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
+	GameObject createTarget(Vector3 cameraPosition) {
+		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		t.renderer.material.color = red;
+		t.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
 		Debug.Log (cameraPosition);
 		
 		// orient the quad so it's facing at the user
-		target.transform.rotation = Quaternion.LookRotation(target.transform.position - cameraPosition);
+		t.transform.rotation = Quaternion.LookRotation(t.transform.position - cameraPosition);
 		
 		// make it visible
-		target.SetActive(true);
+		t.SetActive(true);
+		return t;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		count++;
 		if (objectsVisible == 0) {
-			createTarget(Camera.main.transform.position);
+			target = createTarget(Camera.main.transform.position);
 			objectsVisible++;
 		}
 
 		// Check if user is pressing the spacebar. Otherwise we don't care what they're looking at.
 		if (Input.GetKeyDown ("space")) {
-			Debug.Log ("Space bar pressed.");
 			RaycastHit hit;
 			if (lookingAtTarget(Camera.main.transform, out hit)) {
+				target.SetActive (false);
+				target = createTarget(Camera.main.transform.position);
 				Debug.Log ("a hit!");
 			} else {
 				if (count % 50 == 0) {
