@@ -6,43 +6,58 @@ public class TargetScript : MonoBehaviour {
 	private int count;
 	private int objectsVisible;
 	private GameObject target;
+	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
 
 	// Use this for initialization
 	void Start () {
 		count = 0;
 		objectsVisible = 0;
 	}
+
+	// Logic to determine whether the user is currently looking at the target.
+	// If true, hit will store the results of the RaycastHit.
+	bool lookingAtTarget(Transform cameraTransform, out RaycastHit hit) {
+		float length = 10.0f;
+		Vector3 rayDirection = cameraTransform.TransformDirection (Vector3.forward);
+		Vector3 rayStart = cameraTransform.position + rayDirection;
+		Debug.DrawRay (rayStart, rayDirection * length, Color.green);
+		return Physics.Raycast(rayStart, rayDirection, out hit, length);
+	}
+
+	void createTarget(Vector3 cameraPosition) {
+		target = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		target.renderer.material.color = red;
+		target.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
+		Debug.Log (cameraPosition);
+		
+		// orient the quad so it's facing at the user
+		target.transform.rotation = Quaternion.LookRotation(target.transform.position - cameraPosition);
+		
+		// make it visible
+		target.SetActive(true);
+	}
 	
 	// Update is called once per frame
 	void Update () {
 		count++;
 		if (objectsVisible == 0) {
-			target = GameObject.CreatePrimitive(PrimitiveType.Quad);
-			target.renderer.material.color = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
-			target.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
-			Debug.Log (Camera.main.transform.position);
-
-			// orient the quad so it's facing at the user
-			target.transform.rotation = Quaternion.LookRotation(target.transform.position - Camera.main.transform.position);
-
-			// make it visible
-			target.SetActive(true);
+			createTarget(Camera.main.transform.position);
 			objectsVisible++;
 		}
-		// check if user is looking at the object
-		float length = 10.0f;
-		RaycastHit hit;
-		Vector3 rayDirection = Camera.main.transform.TransformDirection (Vector3.forward);
-		Vector3 rayStart = Camera.main.transform.position + rayDirection;
-		Debug.DrawRay (rayStart, rayDirection * length, Color.green);
-		if (Physics.Raycast (rayStart, rayDirection, out hit, length)) {
-			Debug.Log (hit);
-			Debug.Log ("a hit!");
-		} else {
-			if (count % 50 == 0) {
-				Debug.Log ("no hit");
+
+		// Check if user is pressing the spacebar. Otherwise we don't care what they're looking at.
+		if (Input.GetKeyDown ("space")) {
+			Debug.Log ("Space bar pressed.");
+			RaycastHit hit;
+			if (lookingAtTarget(Camera.main.transform, out hit)) {
+				Debug.Log ("a hit!");
+			} else {
+				if (count % 50 == 0) {
+					Debug.Log ("no hit");
+				}
 			}
 		}
+
 		if (count % 50 == 0) {
 			Debug.Log (Camera.main.transform.rotation);
 		}
