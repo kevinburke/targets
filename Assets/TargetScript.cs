@@ -20,9 +20,11 @@ public class TargetScript : MonoBehaviour {
 		}
 		count++;
 		if (objectsVisible == 0) {
-			GameObject target = GameObject.CreatePrimitive(PrimitiveType.Quad); 
+			GameObject target = GameObject.CreatePrimitive(PrimitiveType.Quad);
+			target.transform.position = new Vector3(Random.Range (-10.0f, 10.0f), 0.64f, Random.Range (-10.0f, 10.0f));
+			Vector3 diff = target.transform.position - transform.position;
+			target.transform.rotation = Quaternion.LookRotation(diff);
 			target.SetActive(true);
-			target.transform.position = new Vector3(-5.0f, 0.64f, 5.0f);
 			Debug.Log(target.GetInstanceID());
 			objectsVisible++;
 		}
