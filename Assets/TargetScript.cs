@@ -5,6 +5,7 @@ public class TargetScript : MonoBehaviour {
 
 	private int count;
 	private int objectsVisible;
+	private GameObject target;
 
 	// Use this for initialization
 	void Start () {
@@ -20,12 +21,12 @@ public class TargetScript : MonoBehaviour {
 		}
 		count++;
 		if (objectsVisible == 0) {
-			GameObject target = GameObject.CreatePrimitive(PrimitiveType.Quad);
-			target.transform.position = new Vector3(Random.Range (-10.0f, 10.0f), 0.64f, Random.Range (-10.0f, 10.0f));
-			Vector3 diff = target.transform.position - transform.position;
-			target.transform.rotation = Quaternion.LookRotation(diff);
-			Debug.Log (Quaternion.LookRotation(diff));
+			target = GameObject.CreatePrimitive(PrimitiveType.Quad);
+			target.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
+			Debug.Log (Camera.main.transform.position);
+			target.transform.rotation =  Quaternion.LookRotation(target.transform.position - Camera.main.transform.position);
 			target.SetActive(true);
+			Debug.Log (Camera.main.transform.forward);
 			Debug.Log(target.GetInstanceID());
 			objectsVisible++;
 		}
