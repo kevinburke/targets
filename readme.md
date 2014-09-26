@@ -22,14 +22,11 @@ You can collect data by forcing people to play the game, or by making it fun to 
 
 This file will be used in lieu of an issue tracker, and like most issue trackers will probably go out of date soon.
 
-- Initial "Press to Recenter Display screen"
-- Create a new object when the spacebar is pressed & user is looking at the object
+- Initial "Press to Recenter Display screen", and graphics which compute based on this setting
 - Effect to blow up the object when you hit spacebar and look at it.
-- A way to measure misses with the spacebar
-- A way to prevent the user from just holding down spacebar while looking around (accuracy penalty, or sample once every 50ms or something)
 - Final Score/Leaderboard/Play Again screen
 - Show the score on each quad (a number that decreases as time increases)
-- Create a target looking object in Photoshop
+- Create a target-looking object in Photoshop
 - Anonymous data publisher
 - Server side code to manage the data (maybe just dumping to text files at first)
 
