@@ -5,7 +5,7 @@ public class TargetScript : MonoBehaviour {
 
 	private int count;
 	private int objectsVisible;
-	private int distance = 3;
+	private int distance = 7;
 	private GameObject target;
 	// lazy way to convert hex color to RGB
 	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
@@ -44,7 +44,7 @@ public class TargetScript : MonoBehaviour {
 		//f.gameObject.AddComponent<MeshRenderer> ();
 		f.AddComponent<TextMesh>();
 		f.transform.rotation = t.transform.rotation;
-		f.transform.position = t.transform.position;
+		f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
 
 		f.GetComponent<TextMesh>().fontSize = 16;
 		f.GetComponent<TextMesh>().color = Color.white;
@@ -52,7 +52,7 @@ public class TargetScript : MonoBehaviour {
 		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
 		f.GetComponent<TextMesh>().font = font;
 		f.GetComponent<TextMesh>().renderer.material = font.material;
-		f.GetComponent<TextMesh>().text = "Hello3";
+		f.GetComponent<TextMesh>().text = "1000";
 		f.SetActive (true);
 		return t;
 	}
