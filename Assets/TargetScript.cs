@@ -27,7 +27,13 @@ public class TargetScript : MonoBehaviour {
 	GameObject createTarget(Vector3 cameraPosition) {
 		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
 		t.renderer.material.color = red;
-		t.transform.position = new Vector3(Random.Range (-2.0f, 2.0f), Random.Range (-0.5f, 2.0f), Random.Range (3.0f, 5.0f));
+		Vector3 s = RandomSphere.PointOnSphere (5.0f);
+		// reject points which are (roughly) outside the FOV
+		if (s.x < -2 || s.x > 2 || s.y < -1.5 || s.y > 3) {
+			s = RandomSphere.PointOnSphere (5.0f);
+		}
+		Debug.Log (s);
+		t.transform.position = s;
 		Debug.Log (cameraPosition);
 		
 		// orient the quad so it's facing at the user
