@@ -2,6 +2,8 @@
 using System.Collections;
 
 public class RandomSphere {
+	// Uses the sphere point picking algorithm described here:
+	// http://mathworld.wolfram.com/SpherePointPicking.html
     public static Vector3 PointOnSphere(float scale) {
 		float x0 = Random.Range (-1f, 1f);
 		float x1 = Random.Range (-1f, 1f);

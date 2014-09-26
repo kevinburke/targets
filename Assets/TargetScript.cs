@@ -5,7 +5,9 @@ public class TargetScript : MonoBehaviour {
 
 	private int count;
 	private int objectsVisible;
+	private int distance = 3;
 	private GameObject target;
+	// lazy way to convert hex color to RGB
 	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
 
 	// Use this for initialization
@@ -27,10 +29,10 @@ public class TargetScript : MonoBehaviour {
 	GameObject createTarget(Vector3 cameraPosition) {
 		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
 		t.renderer.material.color = red;
-		Vector3 s = RandomSphere.PointOnSphere (5.0f);
+		Vector3 s = RandomSphere.PointOnSphere (distance);
 		// reject points which are (roughly) outside the FOV
-		if (s.x < -2 || s.x > 2 || s.y < -1.5 || s.y > 3) {
-			s = RandomSphere.PointOnSphere (5.0f);
+		while(s.x < -2.5 || s.x > 2.5 || s.y < -1.5 || s.y > 2.5 || s.z <= 0) {
+			s = RandomSphere.PointOnSphere (distance);
 		}
 		Debug.Log (s);
 		t.transform.position = s;
@@ -38,9 +40,20 @@ public class TargetScript : MonoBehaviour {
 		
 		// orient the quad so it's facing at the user
 		t.transform.rotation = Quaternion.LookRotation(t.transform.position - cameraPosition);
-		
-		// make it visible
-		t.SetActive(true);
+		GameObject f = new GameObject();
+		//f.gameObject.AddComponent<MeshRenderer> ();
+		f.AddComponent<TextMesh>();
+		f.transform.rotation = t.transform.rotation;
+		f.transform.position = t.transform.position;
+
+		f.GetComponent<TextMesh>().fontSize = 16;
+		f.GetComponent<TextMesh>().color = Color.white;
+		f.GetComponent<TextMesh>().characterSize = 0.2f;
+		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+		f.GetComponent<TextMesh>().font = font;
+		f.GetComponent<TextMesh>().renderer.material = font.material;
+		f.GetComponent<TextMesh>().text = "Hello3";
+		f.SetActive (true);
 		return t;
 	}
 	
@@ -56,18 +69,22 @@ public class TargetScript : MonoBehaviour {
 		if (Input.GetKeyDown ("space")) {
 			RaycastHit hit;
 			if (lookingAtTarget(Camera.main.transform, out hit)) {
+				GameObject targetCandidate = createTarget(Camera.main.transform.position);
+				// Make sure the new candidate is far enough away
+				while (Vector3.Distance (targetCandidate.transform.position, target.transform.position) < 0.4) {
+					targetCandidate = createTarget(Camera.main.transform.position);
+				}
+				// Not sure this activate dance is necessary
 				target.SetActive (false);
-				target = createTarget(Camera.main.transform.position);
+				target = targetCandidate;
+				Destroy (targetCandidate);
+				target.SetActive (true);
 				Debug.Log ("a hit!");
 			} else {
 				if (count % 50 == 0) {
 					Debug.Log ("no hit");
 				}
 			}
-		}
-
-		if (count % 50 == 0) {
-			Debug.Log (Camera.main.transform.rotation);
 		}
 	}
 }
