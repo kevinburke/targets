@@ -3,6 +3,14 @@ using System.Collections;
 
 public class TargetScript : MonoBehaviour {
 
+    private enum States {
+        STATE_INIT,
+        STATE_RECENTER_DIALOG,
+        STATE_INSTRUCTIONS,
+        STATE_SINGLE_INPUT_GAME,
+        STATE_MULTI_INPUT_GAME,
+        STATE_GAME_OVER,
+    };
     private int gamesPlayed = 0;
     private int totalGames = 10;
 
@@ -100,7 +108,7 @@ public class TargetScript : MonoBehaviour {
                 target = getTarget();
                 if (target == TARGET_GREEN_BUTTON) {
                     startTimer();
-                } else if (target == TARGET_CALCULATOR_BUTTON) {
+                } else {
                     if (isDesiredButton()) {
                         registerHit();
                     } else {
@@ -111,9 +119,11 @@ public class TargetScript : MonoBehaviour {
                     stopTimer();
                     addMetrics();
                     startTimer();
-                } else {
-                    registerMiss();
-                }
+                    if (gameOver()) {
+                        publishMetrics();
+                        state = STATE_GAME_OVER;
+                    }
+                } 
             }
         }
 
