@@ -3,6 +3,9 @@ using System.Collections;
 
 public class TargetScript : MonoBehaviour {
 
+    private int gamesPlayed = 0;
+    private int totalGames = 10;
+
 	private int count;
 	private int objectsVisible;
 	private int distance = 7;
@@ -59,32 +62,68 @@ public class TargetScript : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		count++;
-		if (objectsVisible == 0) {
-			target = createTarget(Camera.main.transform.position);
-			objectsVisible++;
-		}
 
-		// Check if user is pressing the spacebar. Otherwise we don't care what they're looking at.
-		if (Input.GetKeyDown ("space")) {
-			RaycastHit hit;
-			if (lookingAtTarget(Camera.main.transform, out hit)) {
-				GameObject targetCandidate = createTarget(Camera.main.transform.position);
-				// Make sure the new candidate is far enough away
-				while (Vector3.Distance (targetCandidate.transform.position, target.transform.position) < 0.4) {
-					targetCandidate = createTarget(Camera.main.transform.position);
-				}
-				// Not sure this activate dance is necessary
-				target.SetActive (false);
-				target = targetCandidate;
-				Destroy (targetCandidate);
-				target.SetActive (true);
-				Debug.Log ("a hit!");
-			} else {
-				if (count % 50 == 0) {
-					Debug.Log ("no hit");
-				}
-			}
-		}
+        if (state == STATE_INIT) {
+            drawRecenterDialog();
+            state = STATE_RECENTER_DIALOG;
+        } else if (state == STATE_RECENTER_DIALOG && Input.anyKeyDown()) {
+            defaultPosition = getCurrentCameraPosition();
+            state = STATE_INSTRUCTIONS;
+            drawInstructions();
+        } else if (state == STATE_INSTRUCTIONS && Input.anyKeyDown()) {
+            state = STATE_SINGLE_INPUT_GAME;
+            drawSingleInputGame();
+        } else if (state == STATE_SINGLE_INPUT_GAME) {
+            // in game mode.
+            if (Input.GetKeyDown("space")) {
+                target = getTarget();
+                if (target == TARGET_GREEN_BUTTON) {
+                    startTimer();
+                } else if (target == TARGET_RED_BUTTON) {
+                    stopTimer();
+                } else {
+                    if (closeToTarget()) {
+                        registerMiss();
+                    }
+                }
+            }
+            gamesPlayed++;
+            if (gamesPlayed < 5) {
+                drawSingleInputGame();
+            } else {
+                state = STATE_MULTI_INPUT_GAME;
+                drawMultiInputGame();
+            }
+        } else {
+            // multi input game
+        }
+
+		//count++;
+		//if (objectsVisible == 0) {
+			//target = createTarget(Camera.main.transform.position);
+			//objectsVisible++;
+		//}
+
+		//// Check if user is pressing the spacebar. Otherwise we don't care what they're looking at.
+		//if (Input.GetKeyDown ("space")) {
+			//RaycastHit hit;
+			//if (lookingAtTarget(Camera.main.transform, out hit)) {
+				//GameObject targetCandidate = createTarget(Camera.main.transform.position);
+				//// Make sure the new candidate is far enough away
+				//while (Vector3.Distance (targetCandidate.transform.position, target.transform.position) < 0.4) {
+					//targetCandidate = createTarget(Camera.main.transform.position);
+				//}
+				//// Not sure this activate dance is necessary
+				//target.SetActive (false);
+				//target = targetCandidate;
+				//Destroy (targetCandidate);
+				//target.SetActive (true);
+				//Debug.Log ("a hit!");
+			//} else {
+				//if (count % 50 == 0) {
+					//Debug.Log ("no hit");
+				//}
+			//}
+		//}
 	}
 }
