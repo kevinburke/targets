@@ -25,7 +25,7 @@ public class TargetScript : MonoBehaviour {
 		float length = 10.0f;
 		Vector3 rayDirection = cameraTransform.TransformDirection (Vector3.forward);
 		Vector3 rayStart = cameraTransform.position + rayDirection;
-		Debug.DrawRay (rayStart, rayDirection * length, Color.green);
+		Debug.DrawRay(rayStart, rayDirection * length, Color.green);
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
 
@@ -96,6 +96,25 @@ public class TargetScript : MonoBehaviour {
             }
         } else {
             // multi input game
+            if (Input.GetKeyDown("space")) {
+                target = getTarget();
+                if (target == TARGET_GREEN_BUTTON) {
+                    startTimer();
+                } else if (target == TARGET_CALCULATOR_BUTTON) {
+                    if (isDesiredButton()) {
+                        registerHit();
+                    } else {
+                        registerButtonMiss();
+                    }
+                    updateDesiredButton();
+                    updateUITarget();
+                    stopTimer();
+                    addMetrics();
+                    startTimer();
+                } else {
+                    registerMiss();
+                }
+            }
         }
 
 		//count++;

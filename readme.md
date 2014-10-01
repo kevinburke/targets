@@ -43,3 +43,31 @@ trackers will probably go out of date soon.
 I haven't actually tested this, but you should be able to load this folder as a
 project in Unity and run it. You may also need the Oculus plugin. The important
 code is in TargetScript.cs.
+
+## API
+
+Here is the API for posting data to the server. Data is posted after five
+single-target rounds and one multi-input round.
+
+```json
+{
+    "single_input_trials": [
+        {
+            "time": 0.5,
+            "hit": false,
+            "camera_rotation": [4.5, 4, 89]
+        },
+        ...
+    ],
+    "multi_input_trial": [
+        {
+            "target": "4",
+            "time": 0.5,
+            "hit": false,
+            "camera_rotation": [4.5, 4, 89]
+        }
+        ...
+    ]
+
+}
+```
