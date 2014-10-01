@@ -1,6 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+public class Metric {
+    public float time;
+    public bool hit;
+    public float[] cameraRotation;
+    public string target;
+}
+
 public class TargetScript : MonoBehaviour {
 
     private enum States {
@@ -11,9 +18,11 @@ public class TargetScript : MonoBehaviour {
         STATE_MULTI_INPUT_GAME,
         STATE_GAME_OVER,
     };
+
     private int gamesPlayed = 0;
     private int totalGames = 10;
 
+    private float startTime;
 	private int count;
 	private int objectsVisible;
 	private int distance = 7;
@@ -67,6 +76,46 @@ public class TargetScript : MonoBehaviour {
 		f.SetActive (true);
 		return t;
 	}
+
+    void drawRecenterDialog() {
+
+    }
+
+    void clearRecenterDialog() {
+
+    }
+
+    void drawInstructions() {
+
+    }
+
+    void clearInstructions() {
+
+    }
+
+    void drawSingleInputGame() {
+
+    }
+
+    void drawMultiInputGame() {
+
+    }
+
+    GameObject getTarget() {
+
+    }
+
+    Vector3 getCurrentCameraPosition() {
+        return new Vector3(0, 0, 0);
+    }
+
+    void registerHit() {
+
+    }
+
+    void registerMiss() {
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -75,8 +124,9 @@ public class TargetScript : MonoBehaviour {
             drawRecenterDialog();
             state = STATE_RECENTER_DIALOG;
         } else if (state == STATE_RECENTER_DIALOG && Input.anyKeyDown()) {
-            defaultPosition = getCurrentCameraPosition();
+            Vector3 defaultPosition = getCurrentCameraPosition();
             state = STATE_INSTRUCTIONS;
+            clearRecenterDialog();
             drawInstructions();
         } else if (state == STATE_INSTRUCTIONS && Input.anyKeyDown()) {
             state = STATE_SINGLE_INPUT_GAME;
@@ -86,13 +136,11 @@ public class TargetScript : MonoBehaviour {
             if (Input.GetKeyDown("space")) {
                 target = getTarget();
                 if (target == TARGET_GREEN_BUTTON) {
-                    startTimer();
+                    startTime = Time.time;
                 } else if (target == TARGET_RED_BUTTON) {
-                    stopTimer();
+                    float timeElapsed = Time.time - startTime;
                 } else {
-                    if (closeToTarget()) {
-                        registerMiss();
-                    }
+                    registerMiss();
                 }
             }
             gamesPlayed++;
@@ -107,7 +155,7 @@ public class TargetScript : MonoBehaviour {
             if (Input.GetKeyDown("space")) {
                 target = getTarget();
                 if (target == TARGET_GREEN_BUTTON) {
-                    startTimer();
+                    startTime = Time.time;
                 } else {
                     if (isDesiredButton()) {
                         registerHit();
