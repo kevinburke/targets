@@ -7,8 +7,10 @@ public class TargetScript : MonoBehaviour {
 	private int objectsVisible;
 	private int distance = 7;
 	private GameObject target;
-	// lazy way to convert hex color to RGB
+	// lazy way to convert hex color to RGB. colors taken from twitter bootstrap
 	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
+	private Color green = new Color(92.0f/256.0f, 184.0f/256.0f, 92.0f/256.0f);
+
 
 	// Use this for initialization
 	void Start () {
@@ -28,6 +30,7 @@ public class TargetScript : MonoBehaviour {
 
 	GameObject createTarget(Vector3 cameraPosition) {
 		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		t.transform.localScale = new Vector3 (3, 3, 1);
 		t.renderer.material.color = red;
 		Vector3 s = RandomSphere.PointOnSphere (distance);
 		// reject points which are (roughly) outside the FOV
@@ -56,7 +59,11 @@ public class TargetScript : MonoBehaviour {
 		f.SetActive (true);
 		return t;
 	}
-	
+
+	void OnGUI() {
+		GUI.Label (new Rect (0, 0, 200, 100), "Hi - I'm a label looking like a box", "box");
+	}
+
 	// Update is called once per frame
 	void Update () {
 		count++;
