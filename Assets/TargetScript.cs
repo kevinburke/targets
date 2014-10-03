@@ -1,26 +1,43 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Metric {
     public float time;
     public bool hit;
     public float[] cameraRotation;
     public string target;
+
+    public Metric(float t, bool h, float[] cr, string target_) {
+        time = t;
+        hit = h;
+        cameraRotation = cr;
+        target = target_;
+    }
 }
 
 public class TargetScript : MonoBehaviour {
 
-    private enum States {
-        STATE_INIT,
-        STATE_RECENTER_DIALOG,
-        STATE_INSTRUCTIONS,
-        STATE_SINGLE_INPUT_GAME,
-        STATE_MULTI_INPUT_GAME,
-        STATE_GAME_OVER,
+    private enum State {
+        HEALTH_WARNING,
+        RECENTER_DIALOG,
+        INSTRUCTIONS,
+        SINGLE_INPUT_GAME,
+        MULTI_INPUT_GAME,
+        GAME_OVER,
     };
 
+    private enum Target {
+        GREEN_BUTTON,
+        RED_BUTTON,
+        OTHER_BUTTON,
+        OTHER,
+    }
+
+    private State state;
+    private List<Metric> metrics;
+
     private int gamesPlayed = 0;
-    private int totalGames = 10;
 
     private float startTime;
 	private int count;
@@ -32,8 +49,11 @@ public class TargetScript : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		count = 0;
-		objectsVisible = 0;
+		//count = 0;
+		//objectsVisible = 0;
+        metrics = new List<Metric>();
+        state = State.HEALTH_WARNING;
+        Debug.Log("Warming up...");
 	}
 
 	// Logic to determine whether the user is currently looking at the target.
@@ -77,20 +97,31 @@ public class TargetScript : MonoBehaviour {
 		return t;
 	}
 
-    void drawRecenterDialog() {
+    void OnGUI() {
+        if (state == State.HEALTH_WARNING) {
+            drawRecenterDialog();
+            state = State.RECENTER_DIALOG;
+        }
+    }
 
+    void drawRecenterDialog() {
+        string loading = "LOADING...";
+        OVRGUI guiHelper = new OVRGUI();
+        guiHelper.StereoBox(300, 300, 300, 300, ref loading, Color.yellow);
     }
 
     void clearRecenterDialog() {
+        Debug.Log("Clearing recenter dialog.");
 
     }
 
     void drawInstructions() {
+        Debug.Log("Drawing instructions.");
 
     }
 
     void clearInstructions() {
-
+        Debug.Log("Clearing instructions.");
     }
 
     void drawSingleInputGame() {
@@ -102,7 +133,7 @@ public class TargetScript : MonoBehaviour {
     }
 
     GameObject getTarget() {
-
+        return new GameObject();
     }
 
     Vector3 getCurrentCameraPosition() {
@@ -116,45 +147,78 @@ public class TargetScript : MonoBehaviour {
     void registerMiss() {
 
     }
+
+    bool matches(GameObject hit, Target t) {
+        return true;
+    }
+
+    bool isDesiredButton() {
+        return true;
+    }
+
+    void registerButtonMiss() {
+
+    }
+
+    void updateDesiredButton() {
+
+    }
+
+    void updateUITarget() {
+
+    }
+
+    bool gameOver() {
+        return false;
+    }
+
+    void publishMetrics(List<Metric> metrics) {
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
-
-        if (state == STATE_INIT) {
-            drawRecenterDialog();
-            state = STATE_RECENTER_DIALOG;
-        } else if (state == STATE_RECENTER_DIALOG && Input.anyKeyDown()) {
+        count++;
+        if (state == State.RECENTER_DIALOG 
+            // ignore keypresses while health & safety warning is visible
+            && !OVRDevice.HMD.GetHSWDisplayState().Displayed 
+            && Input.anyKeyDown
+        ) {
             Vector3 defaultPosition = getCurrentCameraPosition();
-            state = STATE_INSTRUCTIONS;
+            state = State.INSTRUCTIONS;
             clearRecenterDialog();
             drawInstructions();
-        } else if (state == STATE_INSTRUCTIONS && Input.anyKeyDown()) {
-            state = STATE_SINGLE_INPUT_GAME;
+        } else if (state == State.INSTRUCTIONS && Input.anyKeyDown) {
+            state = State.SINGLE_INPUT_GAME;
             drawSingleInputGame();
-        } else if (state == STATE_SINGLE_INPUT_GAME) {
+        } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
-                target = getTarget();
-                if (target == TARGET_GREEN_BUTTON) {
+                GameObject target = getTarget();
+                if (matches(target, Target.GREEN_BUTTON)) {
                     startTime = Time.time;
-                } else if (target == TARGET_RED_BUTTON) {
+                } else if (matches(target, Target.RED_BUTTON)) {
                     float timeElapsed = Time.time - startTime;
+                    // replace null with cameraPosition
+                    Metric m = new Metric(timeElapsed, true, null, "");
+                    metrics.Add(m);
                 } else {
-                    registerMiss();
+                    float timeElapsed = Time.time - startTime;
+                    Metric m = new Metric(timeElapsed, false, null, "");
+                    metrics.Add(m);
                 }
             }
             gamesPlayed++;
             if (gamesPlayed < 5) {
                 drawSingleInputGame();
             } else {
-                state = STATE_MULTI_INPUT_GAME;
+                state = State.MULTI_INPUT_GAME;
                 drawMultiInputGame();
             }
-        } else {
-            // multi input game
+        } else if (state == State.MULTI_INPUT_GAME) {
             if (Input.GetKeyDown("space")) {
-                target = getTarget();
-                if (target == TARGET_GREEN_BUTTON) {
+                GameObject target = getTarget();
+                if (matches(target, Target.GREEN_BUTTON)) {
                     startTime = Time.time;
                 } else {
                     if (isDesiredButton()) {
@@ -164,14 +228,20 @@ public class TargetScript : MonoBehaviour {
                     }
                     updateDesiredButton();
                     updateUITarget();
-                    stopTimer();
-                    addMetrics();
-                    startTimer();
+                    float timeElapsed = Time.time - startTime;
+                    Metric m = new Metric(timeElapsed, false, null, "");
+                    metrics.Add(m);
+                    startTime = Time.time;
                     if (gameOver()) {
-                        publishMetrics();
-                        state = STATE_GAME_OVER;
+                        publishMetrics(metrics);
+                        state = State.GAME_OVER;
                     }
                 } 
+            }
+        } else {
+            if (count % 400 == 0) {
+                Debug.Log("Holding pattern...");
+                Debug.Log(state);
             }
         }
 
