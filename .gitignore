@@ -12,5 +12,6 @@ obj/
 /*.sln
 *.unityproj
 *.user
+*.swp
 
 Targets_Data/output_log.txt

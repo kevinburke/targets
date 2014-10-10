@@ -34,6 +34,7 @@ public class TargetScript : MonoBehaviour {
         OTHER,
     }
 
+	OVRGUI GUIControl;
     private State state;
     private List<Metric> metrics;
 
@@ -103,14 +104,16 @@ public class TargetScript : MonoBehaviour {
     void OnGUI() {
         if (state == State.HEALTH_WARNING) {
             drawRecenterDialog();
-            state = State.RECENTER_DIALOG;
+            // state = State.RECENTER_DIALOG;
         }
     }
 
     void drawRecenterDialog() {
+	Debug.Log("Drawing Recenter dialog.");
         string loading = "LOADING...";
         OVRGUI guiHelper = new OVRGUI();
         guiHelper.StereoBox(300, 300, 300, 300, ref loading, Color.yellow);
+	Debug.Log("Stereo BOx should be visible.");
     }
 
     void clearRecenterDialog() {
