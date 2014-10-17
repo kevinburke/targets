@@ -58,7 +58,7 @@ public class TargetScript : MonoBehaviour {
         metrics = new List<Metric>();
         state = State.HEALTH_WARNING;
         Debug.Log("Warming up...");
-		GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
+		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
 	// Logic to determine whether the user is currently looking at the target.
@@ -103,20 +103,31 @@ public class TargetScript : MonoBehaviour {
 		return t;
 	}
 
-    void OnGUI() {
-        if (state == State.HEALTH_WARNING) {
-            drawRecenterDialog();
-            // state = State.RECENTER_DIALOG;
-        }
-    }
-
     void drawRecenterDialog() {
+		// The best practice is to draw text directly to the screen.
+		// I couldn't actually get this to work. Posting on the forums suggested
+		// a third-party VR GUI library. 
+
+		// Maybe one day I will become a good programmer or learn more about Unity
+		// but for the moment I am going to just draw the text in the world so I don't
+		// give up on the project.
 		Debug.Log("Drawing Recenter dialog.");
-        string loading = "LOADING...";
-        OVRGUI guiHelper = new OVRGUI();
-        guiHelper.StereoDrawTexture(300, 300, 300, 300, ref loading, Color.white);
+        string loading = "Get comfy and then press any key.";
+		GameObject f = new GameObject();
+		//f.gameObject.AddComponent<MeshRenderer> ();
+		f.AddComponent<TextMesh>();
+		//f.transform.rotation = t.transform.rotation;
+		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
+		
+		f.GetComponent<TextMesh>().fontSize = 16;
+		f.GetComponent<TextMesh>().color = Color.white;
+		f.GetComponent<TextMesh>().characterSize = 0.2f;
+		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+		f.GetComponent<TextMesh>().font = font;
+		f.GetComponent<TextMesh>().renderer.material = font.material;
+		f.GetComponent<TextMesh>().text = loading;
+		f.SetActive (true);
 		Debug.Log("Stereo BOx should be visible.");
-		Debug.Log (guiHelper);
     }
 
     void clearRecenterDialog() {
@@ -188,7 +199,10 @@ public class TargetScript : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         count++;
-        if (state == State.RECENTER_DIALOG 
+		if (state == State.HEALTH_WARNING) {
+			drawRecenterDialog();
+			state = State.RECENTER_DIALOG;
+		} else if (state == State.RECENTER_DIALOG 
             // ignore keypresses while health & safety warning is visible
             && !OVRDevice.HMD.GetHSWDisplayState().Displayed 
             && Input.anyKeyDown
