@@ -37,6 +37,7 @@ public class TargetScript : MonoBehaviour {
 	OVRGUI GUIControl;
     private State state;
     private List<Metric> metrics;
+	private GameObject      GUIRenderObject  = null;
 
     private int gamesPlayed = 0;
 
@@ -57,6 +58,7 @@ public class TargetScript : MonoBehaviour {
         metrics = new List<Metric>();
         state = State.HEALTH_WARNING;
         Debug.Log("Warming up...");
+		GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
 	// Logic to determine whether the user is currently looking at the target.
@@ -109,11 +111,12 @@ public class TargetScript : MonoBehaviour {
     }
 
     void drawRecenterDialog() {
-	Debug.Log("Drawing Recenter dialog.");
+		Debug.Log("Drawing Recenter dialog.");
         string loading = "LOADING...";
         OVRGUI guiHelper = new OVRGUI();
-        guiHelper.StereoBox(300, 300, 300, 300, ref loading, Color.yellow);
-	Debug.Log("Stereo BOx should be visible.");
+        guiHelper.StereoDrawTexture(300, 300, 300, 300, ref loading, Color.white);
+		Debug.Log("Stereo BOx should be visible.");
+		Debug.Log (guiHelper);
     }
 
     void clearRecenterDialog() {
