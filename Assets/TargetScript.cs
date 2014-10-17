@@ -103,7 +103,7 @@ public class TargetScript : MonoBehaviour {
 		return t;
 	}
 
-    void drawRecenterDialog() {
+    void drawRecenterDialog(Vector3 cameraPosition) {
 		// The best practice is to draw text directly to the screen.
 		// I couldn't actually get this to work. Posting on the forums suggested
 		// a third-party VR GUI library. 
@@ -112,11 +112,12 @@ public class TargetScript : MonoBehaviour {
 		// but for the moment I am going to just draw the text in the world so I don't
 		// give up on the project.
 		Debug.Log("Drawing Recenter dialog.");
-        string loading = "Get comfy and then press any key.";
+        string loading = "Get comfy and then\npress any key.";
 		GameObject f = new GameObject();
 		//f.gameObject.AddComponent<MeshRenderer> ();
 		f.AddComponent<TextMesh>();
-		//f.transform.rotation = t.transform.rotation;
+		f.transform.position = new Vector3 (-1f, 0, 4);
+		f.transform.rotation = Quaternion.LookRotation(f.transform.position - cameraPosition);
 		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
 		
 		f.GetComponent<TextMesh>().fontSize = 16;
@@ -126,8 +127,9 @@ public class TargetScript : MonoBehaviour {
 		f.GetComponent<TextMesh>().font = font;
 		f.GetComponent<TextMesh>().renderer.material = font.material;
 		f.GetComponent<TextMesh>().text = loading;
+		//f.GetComponent<TextMesh>().alignment = TextAlignment.Center;
 		f.SetActive (true);
-		Debug.Log("Stereo BOx should be visible.");
+		Debug.Log("Stereo Box should be visible.");
     }
 
     void clearRecenterDialog() {
@@ -200,13 +202,14 @@ public class TargetScript : MonoBehaviour {
 	void Update () {
         count++;
 		if (state == State.HEALTH_WARNING) {
-			drawRecenterDialog();
+			drawRecenterDialog(Camera.main.transform.position);
 			state = State.RECENTER_DIALOG;
 		} else if (state == State.RECENTER_DIALOG 
             // ignore keypresses while health & safety warning is visible
             && !OVRDevice.HMD.GetHSWDisplayState().Displayed 
             && Input.anyKeyDown
         ) {
+			Debug.Log ("Clearing recenter dialog.");
             Vector3 defaultPosition = getCurrentCameraPosition();
             state = State.INSTRUCTIONS;
             clearRecenterDialog();
