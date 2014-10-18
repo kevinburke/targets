@@ -46,6 +46,9 @@ public class TargetScript : MonoBehaviour {
 	private int objectsVisible;
 	private int distance = 7;
 	private GameObject target;
+	private GameObject recenterDialog;
+	private GameObject instructions;
+	private Quaternion restingRotation;
 	// lazy way to convert hex color to RGB. colors taken from twitter bootstrap
 	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
 	private Color green = new Color(92.0f/256.0f, 184.0f/256.0f, 92.0f/256.0f);
@@ -113,32 +116,50 @@ public class TargetScript : MonoBehaviour {
 		// give up on the project.
 		Debug.Log("Drawing Recenter dialog.");
         string loading = "Get comfy and then\npress any key.";
-		GameObject f = new GameObject();
-		//f.gameObject.AddComponent<MeshRenderer> ();
-		f.AddComponent<TextMesh>();
-		f.transform.position = new Vector3 (-1f, 0, 4);
-		f.transform.rotation = Quaternion.LookRotation(f.transform.position - cameraPosition);
+		recenterDialog = new GameObject();
+		recenterDialog.AddComponent<TextMesh>();
+		recenterDialog.transform.position = new Vector3 (-1f, 0, 4);
+		recenterDialog.transform.rotation = Quaternion.LookRotation(recenterDialog.transform.position - cameraPosition);
 		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
 		
-		f.GetComponent<TextMesh>().fontSize = 16;
-		f.GetComponent<TextMesh>().color = Color.white;
-		f.GetComponent<TextMesh>().characterSize = 0.2f;
+		recenterDialog.GetComponent<TextMesh>().fontSize = 16;
+		recenterDialog.GetComponent<TextMesh>().color = Color.white;
+		recenterDialog.GetComponent<TextMesh>().characterSize = 0.2f;
 		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
-		f.GetComponent<TextMesh>().font = font;
-		f.GetComponent<TextMesh>().renderer.material = font.material;
-		f.GetComponent<TextMesh>().text = loading;
-		//f.GetComponent<TextMesh>().alignment = TextAlignment.Center;
-		f.SetActive (true);
+		recenterDialog.GetComponent<TextMesh>().font = font;
+		recenterDialog.GetComponent<TextMesh>().renderer.material = font.material;
+		recenterDialog.GetComponent<TextMesh>().text = loading;
+		recenterDialog.GetComponent<TextMesh>().alignment = TextAlignment.Center;
+		recenterDialog.SetActive (true);
 		Debug.Log("Stereo Box should be visible.");
     }
 
     void clearRecenterDialog() {
         Debug.Log("Clearing recenter dialog.");
-
+		recenterDialog.SetActive (false);
     }
 
-    void drawInstructions() {
+    void drawInstructions(Vector3 cameraPosition) {
         Debug.Log("Drawing instructions.");
+		string instructionsText = "Look at the green square and\nthen look at the red square";
+		instructions = new GameObject();
+		instructions.AddComponent<TextMesh>();
+		Debug.Log ("Instructions position:");
+		Debug.Log (4.0F * restingRotation);
+		instructions.transform.position = restingRotation * Vector3.forward;
+		instructions.transform.rotation = Quaternion.LookRotation(recenterDialog.transform.position - cameraPosition);
+		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
+		
+		instructions.GetComponent<TextMesh>().fontSize = 16;
+		instructions.GetComponent<TextMesh>().color = Color.white;
+		instructions.GetComponent<TextMesh>().characterSize = 0.2f;
+		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+		instructions.GetComponent<TextMesh>().font = font;
+		instructions.GetComponent<TextMesh>().renderer.material = font.material;
+		instructions.GetComponent<TextMesh>().text = instructionsText;
+		instructions.GetComponent<TextMesh>().alignment = TextAlignment.Center;
+		instructions.SetActive (true);
+		Debug.Log("Stereo Box should be visible.");
 
     }
 
@@ -210,7 +231,7 @@ public class TargetScript : MonoBehaviour {
             && Input.anyKeyDown
         ) {
 			Debug.Log ("Clearing recenter dialog.");
-            Vector3 defaultPosition = getCurrentCameraPosition();
+            restingRotation = Camera.main.transform.rotation;
             state = State.INSTRUCTIONS;
             clearRecenterDialog();
             drawInstructions();
