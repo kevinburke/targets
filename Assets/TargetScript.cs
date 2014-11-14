@@ -139,15 +139,13 @@ public class TargetScript : MonoBehaviour {
 		recenterDialog.SetActive (false);
     }
 
-    void drawInstructions(Vector3 cameraPosition) {
+    void drawInstructions(Quaternion cameraPosition) {
         Debug.Log("Drawing instructions.");
 		string instructionsText = "Look at the green square and\nthen look at the red square";
 		instructions = new GameObject();
 		instructions.AddComponent<TextMesh>();
-		Debug.Log ("Instructions position:");
-		Debug.Log (4.0F * restingRotation);
 		instructions.transform.position = restingRotation * Vector3.forward;
-		instructions.transform.rotation = Quaternion.LookRotation(recenterDialog.transform.position - cameraPosition);
+		instructions.transform.rotation = cameraPosition;
 		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
 		
 		instructions.GetComponent<TextMesh>().fontSize = 16;
@@ -223,18 +221,18 @@ public class TargetScript : MonoBehaviour {
 	void Update () {
         count++;
 		if (state == State.HEALTH_WARNING) {
-			drawRecenterDialog(Camera.main.transform.position);
+			drawRecenterDialog(new Vector3(0, 0, 0));
 			state = State.RECENTER_DIALOG;
 		} else if (state == State.RECENTER_DIALOG 
-            // ignore keypresses while health & safety warning is visible
-            && !OVRDevice.HMD.GetHSWDisplayState().Displayed 
+            // ignore keypresses while health & safety warning is visible 
             && Input.anyKeyDown
         ) {
 			Debug.Log ("Clearing recenter dialog.");
-            restingRotation = Camera.main.transform.rotation;
+			OVRPose ovp = OVRManager.display.GetHeadPose();
+            restingRotation = ovp.orientation;
             state = State.INSTRUCTIONS;
             clearRecenterDialog();
-            drawInstructions();
+            drawInstructions(restingRotation);
         } else if (state == State.INSTRUCTIONS && Input.anyKeyDown) {
             state = State.SINGLE_INPUT_GAME;
             drawSingleInputGame();
