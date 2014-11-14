@@ -74,37 +74,6 @@ public class TargetScript : MonoBehaviour {
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
 
-	GameObject createTarget(Vector3 cameraPosition) {
-		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
-		t.transform.localScale = new Vector3 (3, 3, 1);
-		t.renderer.material.color = red;
-		Vector3 s = RandomSphere.PointOnSphere (distance);
-		// reject points which are (roughly) outside the FOV
-		while(s.x < -2.5 || s.x > 2.5 || s.y < -1.5 || s.y > 2.5 || s.z <= 0) {
-			s = RandomSphere.PointOnSphere (distance);
-		}
-		Debug.Log (s);
-		t.transform.position = s;
-		Debug.Log (cameraPosition);
-		
-		// orient the quad so it's facing at the user
-		t.transform.rotation = Quaternion.LookRotation(t.transform.position - cameraPosition);
-		GameObject f = new GameObject();
-		//f.gameObject.AddComponent<MeshRenderer> ();
-		f.AddComponent<TextMesh>();
-		f.transform.rotation = t.transform.rotation;
-		f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
-
-		f.GetComponent<TextMesh>().fontSize = 16;
-		f.GetComponent<TextMesh>().color = Color.white;
-		f.GetComponent<TextMesh>().characterSize = 0.2f;
-		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
-		f.GetComponent<TextMesh>().font = font;
-		f.GetComponent<TextMesh>().renderer.material = font.material;
-		f.GetComponent<TextMesh>().text = "1000";
-		f.SetActive (true);
-		return t;
-	}
 
     void drawRecenterDialog(Vector3 cameraPosition) {
 		// The best practice is to draw text directly to the screen.
@@ -141,13 +110,15 @@ public class TargetScript : MonoBehaviour {
 
     void drawInstructions(Quaternion cameraPosition) {
         Debug.Log("Drawing instructions.");
-		string instructionsText = "Look at the green square and\nthen look at the red square";
+		string instructionsText = "Look at the green square and press spacebar.\nThen look at the red square and press spacebar.";
 		instructions = new GameObject();
 		instructions.AddComponent<TextMesh>();
 		instructions.transform.position = restingRotation * Vector3.forward;
 		instructions.transform.rotation = cameraPosition;
 		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
-		
+
+		instructions.GetComponent<TextMesh> ().anchor = TextAnchor.MiddleCenter;
+		instructions.GetComponent<TextMesh> ().offsetZ = 5;
 		instructions.GetComponent<TextMesh>().fontSize = 16;
 		instructions.GetComponent<TextMesh>().color = Color.white;
 		instructions.GetComponent<TextMesh>().characterSize = 0.2f;
@@ -165,8 +136,34 @@ public class TargetScript : MonoBehaviour {
         Debug.Log("Clearing instructions.");
     }
 
-    void drawSingleInputGame() {
+	private Vector3 getPointOnSphere(int sphereRadius){
+		Vector3 s = RandomSphere.PointOnSphere (sphereRadius);
+		// reject points which are (roughly) outside the FOV
+		while(s.x < -2.5 || s.x > 2.5 || s.y < -1.5 || s.y > 2.5 || s.z <= 0) {
+			s = RandomSphere.PointOnSphere (sphereRadius);
+		}
+		return s;
+	}
 
+	/*
+	 * Create a target at a random position in front of the user
+	 */
+	GameObject createTarget(Vector3 cameraPosition) {
+		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		t.transform.localScale = new Vector3 (3, 3, 1);
+		t.renderer.material.color = red;
+
+		Vector3 s = getPointOnSphere (distance);
+
+		t.transform.position = s;
+		
+		// orient the quad so it's facing at the user
+		t.transform.rotation = Quaternion.LookRotation(t.transform.position - cameraPosition);
+		return t;
+	}
+    void drawSingleInputGame(Quaternion startRotation) {
+		Debug.Log ("Drawing single input game.");
+		createTarget (startRotation * Vector3.forward);
     }
 
     void drawMultiInputGame() {
@@ -234,8 +231,10 @@ public class TargetScript : MonoBehaviour {
             clearRecenterDialog();
             drawInstructions(restingRotation);
         } else if (state == State.INSTRUCTIONS && Input.anyKeyDown) {
+			Debug.Log("Clearing instructions. Moving to single state game.");
+			clearInstructions();
             state = State.SINGLE_INPUT_GAME;
-            drawSingleInputGame();
+            drawSingleInputGame(restingRotation);
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
@@ -252,15 +251,17 @@ public class TargetScript : MonoBehaviour {
                     Metric m = new Metric(timeElapsed, false, null, "");
                     metrics.Add(m);
                 }
-            }
-            gamesPlayed++;
-            if (gamesPlayed < 5) {
-                drawSingleInputGame();
-            } else {
-                state = State.MULTI_INPUT_GAME;
-                drawMultiInputGame();
-            }
-        } else if (state == State.MULTI_INPUT_GAME) {
+
+				gamesPlayed++;
+				if (gamesPlayed < 5) {
+					drawSingleInputGame(restingRotation);
+				} else {
+					state = State.MULTI_INPUT_GAME;
+					drawMultiInputGame();
+				}
+			}
+			
+		} else if (state == State.MULTI_INPUT_GAME) {
             if (Input.GetKeyDown("space")) {
                 GameObject target = getTarget();
                 if (matches(target, Target.GREEN_BUTTON)) {
@@ -284,7 +285,7 @@ public class TargetScript : MonoBehaviour {
                 } 
             }
         } else {
-            if (count % 400 == 0) {
+            if (count % 5000 == 0) {
                 Debug.Log("Holding pattern...");
                 Debug.Log(state);
             }
