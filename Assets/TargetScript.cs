@@ -45,10 +45,13 @@ public class TargetScript : MonoBehaviour {
 	private int count;
 	private int objectsVisible;
 	private int distance = 7;
-	private GameObject target;
+	private GameObject redTarget;
 	private GameObject recenterDialog;
 	private GameObject instructions;
 	private Quaternion restingRotation;
+
+	private GameObject greenTarget;
+
 	// lazy way to convert hex color to RGB. colors taken from twitter bootstrap
 	private Color red = new Color(217.0f/256.0f, 79.0f/256.0f, 83.0f/256.0f);
 	private Color green = new Color(92.0f/256.0f, 184.0f/256.0f, 92.0f/256.0f);
@@ -136,34 +139,50 @@ public class TargetScript : MonoBehaviour {
         Debug.Log("Clearing instructions.");
     }
 
-	private Vector3 getPointOnSphere(int sphereRadius){
+	/*
+	 * find a point on the sphere that's roughly in the user's FOV
+	 * lookDirection should be a vector with the same distance as the sphere radius
+	 */
+	private Vector3 getPointOnSphere(int sphereRadius, Vector3 lookDirection){
 		Vector3 s = RandomSphere.PointOnSphere (sphereRadius);
 		// reject points which are (roughly) outside the FOV
-		while(s.x < -2.5 || s.x > 2.5 || s.y < -1.5 || s.y > 2.5 || s.z <= 0) {
+		Vector3 diff = s - lookDirection;
+		// XXX these values should depend on the sphere radius & correspond to angles
+		count = 0;
+
+		while(count < 50 && (Vector3.Angle (s, lookDirection) > 30)) {
 			s = RandomSphere.PointOnSphere (sphereRadius);
+			diff = s.normalized - lookDirection;
+			count++;
+			Debug.Log (diff);
+			Debug.Log (Vector3.Angle (s, lookDirection));
 		}
+		Debug.Log (Vector3.Angle (s, lookDirection));
+		Debug.Log (s);
 		return s;
 	}
 
 	/*
 	 * Create a target at a random position in front of the user
 	 */
-	GameObject createTarget(Vector3 cameraPosition) {
+	GameObject createTarget(Quaternion startRotation) {
 		GameObject t = GameObject.CreatePrimitive(PrimitiveType.Quad);
 		t.transform.localScale = new Vector3 (3, 3, 1);
-		t.renderer.material.color = red;
+		//t.renderer.material.color = red;
 
-		Vector3 s = getPointOnSphere (distance);
-
+		Vector3 s = getPointOnSphere (distance, (startRotation * Vector3.forward)*distance);
 		t.transform.position = s;
 		
 		// orient the quad so it's facing at the user
-		t.transform.rotation = Quaternion.LookRotation(t.transform.position - cameraPosition);
+		t.transform.rotation = Quaternion.LookRotation(t.transform.position - (startRotation * Vector3.forward));
 		return t;
 	}
+
     void drawSingleInputGame(Quaternion startRotation) {
 		Debug.Log ("Drawing single input game.");
-		createTarget (startRotation * Vector3.forward);
+		greenTarget = createTarget(startRotation);
+		greenTarget.renderer.material.color = green;
+		greenTarget.transform.localScale = new Vector3 (5, 5, 1);
     }
 
     void drawMultiInputGame() {
@@ -213,6 +232,10 @@ public class TargetScript : MonoBehaviour {
     void publishMetrics(List<Metric> metrics) {
 
     }
+
+	void clearTargets() {
+
+	}
 	
 	// Update is called once per frame
 	void Update () {
@@ -251,6 +274,8 @@ public class TargetScript : MonoBehaviour {
                     Metric m = new Metric(timeElapsed, false, null, "");
                     metrics.Add(m);
                 }
+
+				clearTargets();
 
 				gamesPlayed++;
 				if (gamesPlayed < 5) {
