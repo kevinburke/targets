@@ -93,11 +93,11 @@ public class TargetScript : MonoBehaviour {
         string loading = "Get comfy and then\npress any key.";
 		recenterDialog = new GameObject();
 		recenterDialog.AddComponent<TextMesh>();
-		recenterDialog.transform.position = new Vector3 (-1f, 0, 4);
+		recenterDialog.transform.position = new Vector3 (-1f, 0, 8);
 		recenterDialog.transform.rotation = Quaternion.LookRotation(recenterDialog.transform.position - cameraPosition);
 		//f.transform.position = t.transform.position + new Vector3(-0.45f, 0.15f, 0);
 		
-		recenterDialog.GetComponent<TextMesh>().fontSize = 16;
+		recenterDialog.GetComponent<TextMesh>().fontSize = 24;
 		recenterDialog.GetComponent<TextMesh>().color = Color.white;
 		recenterDialog.GetComponent<TextMesh>().characterSize = 0.2f;
 		Font font = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
@@ -190,12 +190,13 @@ public class TargetScript : MonoBehaviour {
 		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
 		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
 		redTarget.renderer.material.color = red;
+		// XXX surely there is a better way to write this
 		int r = rnd.Next(0, 2);
 		int arc;
 		if (r == 0) {
-			arc = -7;
+			arc = -5;
 		} else {
-			arc = 7;
+			arc = 5;
 		}
 		redTarget.transform.position = rotateByArc (greenTarget.transform.position, arc);
 		redTarget.transform.rotation = Quaternion.LookRotation (redTarget.transform.position - (startRotation * Vector3.forward));
@@ -277,6 +278,9 @@ public class TargetScript : MonoBehaviour {
 	void clearTargets() {
 		if (greenTarget) {
 			greenTarget.SetActive (false);
+		}
+		if (redTarget) {
+			redTarget.SetActive (false);
 		}
 	}
 	
