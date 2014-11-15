@@ -51,7 +51,8 @@ public class TargetScript : MonoBehaviour {
 	private GameObject instructions;
 	private Quaternion restingRotation;
 	System.Random rnd;
-
+	OVRCameraRig rig;
+	
 	private GameObject greenTarget;
 
 	// lazy way to convert hex color to RGB. colors taken from twitter bootstrap
@@ -67,13 +68,14 @@ public class TargetScript : MonoBehaviour {
         state = State.HEALTH_WARNING;
 		rnd = new System.Random ();
         Debug.Log("Warming up...");
+		rig = GetComponentInChildren<OVRCameraRig>();
 		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
 	// Logic to determine whether the user is currently looking at the target.
 	// If true, hit will store the results of the RaycastHit.
-	bool lookingAtTarget(Transform cameraTransform, out RaycastHit hit) {
-		float length = 10.0f;
+	bool lookingAtSomeTarget(Transform cameraTransform, out RaycastHit hit) {
+		float length = 12.0f;
 		Vector3 rayDirection = cameraTransform.TransformDirection (Vector3.forward);
 		Vector3 rayStart = cameraTransform.position + rayDirection;
 		Debug.DrawRay(rayStart, rayDirection * length, Color.green);
@@ -247,8 +249,9 @@ public class TargetScript : MonoBehaviour {
 
     }
 
-    bool matches(GameObject hit, Target t) {
-        return true;
+    bool matches(RaycastHit hit, Target t) {
+		Debug.Log (hit);
+		return true;
     }
 
     bool isDesiredButton() {
@@ -308,35 +311,49 @@ public class TargetScript : MonoBehaviour {
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
+				bool clearTarget = false;
                 GameObject target = getTarget();
-                if (matches(target, Target.GREEN_BUTTON)) {
-                    startTime = Time.time;
-                } else if (matches(target, Target.RED_BUTTON)) {
-                    float timeElapsed = Time.time - startTime;
-                    // replace null with cameraPosition
-                    Metric m = new Metric(timeElapsed, true, null, "");
-                    metrics.Add(m);
-                } else {
-                    float timeElapsed = Time.time - startTime;
-                    Metric m = new Metric(timeElapsed, false, null, "");
-                    metrics.Add(m);
-                }
+				RaycastHit hit;
+				OVRPose ovp = OVRManager.display.GetHeadPose();
+				if (lookingAtSomeTarget(ovp.orientation, out hit)) {
+	                if (matches(hit, Target.GREEN_BUTTON)) {
+						Debug.Log ("Matched Green button.");
+	                    startTime = Time.time;
+	                } else if (matches(hit, Target.RED_BUTTON)) {
+	                    float timeElapsed = Time.time - startTime;
+	                    // replace null with cameraPosition
+	                    Metric m = new Metric(timeElapsed, true, null, "");
+	                    metrics.Add(m);
+						clearTarget = true;
+	                } else {
+						Debug.Log ("Missed!");
+	                    float timeElapsed = Time.time - startTime;
+	                    Metric m = new Metric(timeElapsed, false, null, "");
+	                    metrics.Add(m);
+						clearTarget = true;
+	                }
 
-				clearTargets();
+					if (clearTarget) {
+						clearTargets();
 
-				gamesPlayed++;
-				if (gamesPlayed < 5) {
-					drawSingleInputGame(restingRotation);
-				} else {
-					state = State.MULTI_INPUT_GAME;
-					drawMultiInputGame();
+						gamesPlayed++;
+						if (gamesPlayed < 5) {
+							drawSingleInputGame(restingRotation);
+						} 
+						/* XXX
+						 * else {
+							state = State.MULTI_INPUT_GAME;
+							drawMultiInputGame();
+						}*/
+					}
 				}
 			}
 			
 		} else if (state == State.MULTI_INPUT_GAME) {
             if (Input.GetKeyDown("space")) {
-                GameObject target = getTarget();
-                if (matches(target, Target.GREEN_BUTTON)) {
+                /*GameObject target = getTarget();
+				RaycastHit hit;
+                if (matches(hit, Target.GREEN_BUTTON)) {
                     startTime = Time.time;
                 } else {
                     if (isDesiredButton()) {
@@ -354,7 +371,7 @@ public class TargetScript : MonoBehaviour {
                         publishMetrics(metrics);
                         state = State.GAME_OVER;
                     }
-                } 
+                } */
             }
         } else {
             if (count % 5000 == 0) {
