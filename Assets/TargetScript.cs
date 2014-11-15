@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 using System.Collections.Generic;
 
 public class Metric {
@@ -49,6 +50,7 @@ public class TargetScript : MonoBehaviour {
 	private GameObject recenterDialog;
 	private GameObject instructions;
 	private Quaternion restingRotation;
+	System.Random rnd;
 
 	private GameObject greenTarget;
 
@@ -63,6 +65,7 @@ public class TargetScript : MonoBehaviour {
 		//objectsVisible = 0;
         metrics = new List<Metric>();
         state = State.HEALTH_WARNING;
+		rnd = new System.Random ();
         Debug.Log("Warming up...");
 		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
@@ -182,14 +185,52 @@ public class TargetScript : MonoBehaviour {
 		Debug.Log ("Drawing single input game.");
 		greenTarget = createTarget(startRotation);
 		greenTarget.renderer.material.color = green;
-		greenTarget.transform.localScale = new Vector3 (5, 5, 1);
+		greenTarget.transform.localScale = new Vector3 (3, 3, 1);
+
+		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
+		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
+		redTarget.renderer.material.color = red;
+		int r = rnd.Next(0, 2);
+		int arc;
+		if (r == 0) {
+			arc = -7;
+		} else {
+			arc = 7;
+		}
+		redTarget.transform.position = rotateByArc (greenTarget.transform.position, arc);
+		redTarget.transform.rotation = Quaternion.LookRotation (redTarget.transform.position - (startRotation * Vector3.forward));
     }
 
     void drawMultiInputGame() {
 
     }
 
-    GameObject getTarget() {
+	/*
+	 * Travel along the circumference of a circle
+	 * 
+	 * Via http://stackoverflow.com/a/25401122/329700
+	 */
+	Vector3 rotateByArc(Vector3 existingTarget, float arc) {
+		// camera is at 0, 0, 0
+		float radius = Vector3.Distance (existingTarget, Vector3.zero);
+		float angle = arc / radius;
+		return rotateByRadians(existingTarget, angle);
+	}
+
+	public Vector3 rotateByRadians(Vector3 existingTarget, float angle)
+	{
+		//Move calculation to 0,0
+		Vector3 v = existingTarget - Vector3.zero;
+		
+		//rotate x and z
+		float x = v.x * Mathf.Cos(angle) + v.z * Mathf.Sin(angle);
+		float z = v.z * Mathf.Cos(angle) - v.x * Mathf.Sin(angle);
+		
+		//move back to center
+		return new Vector3(x, existingTarget.y, z) + Vector3.zero;
+	}
+	
+	GameObject getTarget() {
         return new GameObject();
     }
 
@@ -234,7 +275,9 @@ public class TargetScript : MonoBehaviour {
     }
 
 	void clearTargets() {
-
+		if (greenTarget) {
+			greenTarget.SetActive (false);
+		}
 	}
 	
 	// Update is called once per frame
