@@ -74,11 +74,12 @@ public class TargetScript : MonoBehaviour {
 
 	// Logic to determine whether the user is currently looking at the target.
 	// If true, hit will store the results of the RaycastHit.
-	bool lookingAtSomeTarget(Transform cameraTransform, out RaycastHit hit) {
-		float length = 12.0f;
-		Vector3 rayDirection = cameraTransform.TransformDirection (Vector3.forward);
-		Vector3 rayStart = cameraTransform.position + rayDirection;
-		Debug.DrawRay(rayStart, rayDirection * length, Color.green);
+	bool lookingAtSomeTarget(Quaternion cameraTransform, out RaycastHit hit) {
+		float length = 20.0f;
+		Vector3 rayDirection = cameraTransform * Vector3.forward;
+		Vector3 rayStart = Vector3.zero;
+		Debug.Log (rayDirection);
+		Debug.DrawRay(rayStart, rayDirection * length, Color.green, 1000);
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
 
@@ -188,11 +189,14 @@ public class TargetScript : MonoBehaviour {
 		greenTarget = createTarget(startRotation);
 		greenTarget.renderer.material.color = green;
 		greenTarget.transform.localScale = new Vector3 (3, 3, 1);
+		Debug.Log (greenTarget.GetInstanceID ());
 
 		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
 		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
 		redTarget.renderer.material.color = red;
-		// XXX surely there is a better way to write this
+
+		// XXX surely there is a better way to write this. Put the red square randomly to 
+		// the left or the right of the green target 
 		int r = rnd.Next(0, 2);
 		int arc;
 		if (r == 0) {
@@ -249,9 +253,10 @@ public class TargetScript : MonoBehaviour {
 
     }
 
-    bool matches(RaycastHit hit, Target t) {
-		Debug.Log (hit);
-		return true;
+    bool matches(RaycastHit hit, GameObject t) {
+		Debug.Log (hit.collider.gameObject.GetInstanceID ());
+		Debug.Log (hit.collider.attachedRigidbody);
+		return hit.collider.gameObject.GetInstanceID () == t.GetInstanceID ();
     }
 
     bool isDesiredButton() {
@@ -308,6 +313,7 @@ public class TargetScript : MonoBehaviour {
 			clearInstructions();
             state = State.SINGLE_INPUT_GAME;
             drawSingleInputGame(restingRotation);
+			Debug.Log ("done drawing single input game.");
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
@@ -316,10 +322,16 @@ public class TargetScript : MonoBehaviour {
 				RaycastHit hit;
 				OVRPose ovp = OVRManager.display.GetHeadPose();
 				if (lookingAtSomeTarget(ovp.orientation, out hit)) {
-	                if (matches(hit, Target.GREEN_BUTTON)) {
+					Debug.Log (hit);
+					Debug.Log (hit.collider);
+					Debug.Log (ovp.orientation);
+					Debug.Log (hit.collider.tag);
+					Debug.Log (matches (hit, greenTarget));
+	                if (matches (hit, greenTarget)) {
 						Debug.Log ("Matched Green button.");
 	                    startTime = Time.time;
-	                } else if (matches(hit, Target.RED_BUTTON)) {
+	                } else if (matches(hit, redTarget)) {
+						Debug.Log ("Matched Red button");
 	                    float timeElapsed = Time.time - startTime;
 	                    // replace null with cameraPosition
 	                    Metric m = new Metric(timeElapsed, true, null, "");
