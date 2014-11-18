@@ -1,20 +1,34 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.IO;
+using System.Net;
 using System.Collections.Generic;
+
+using Newtonsoft.Json;
+using RestSharp;
 
 public class Metric {
     public float time;
     public bool hit;
-    public float[] cameraRotation;
-    public string target;
+    public Quaternion cameraRotation;
+	public Vector3 greenTargetPosition;
+	public Vector3 redTargetPosition;
+	public float targetSize;
 
-    public Metric(float t, bool h, float[] cr, string target_) {
+	public Metric(float t, bool h, Quaternion cr, Vector3 gtp, Vector3 rtp, float ts) {
         time = t;
         hit = h;
         cameraRotation = cr;
-        target = target_;
+		redTargetPosition = rtp;
+		greenTargetPosition = gtp;
+		targetSize = ts;
     }
+}
+
+public class MetricsResponse {
+	public bool success;
+	public int status;
 }
 
 public class TargetScript : MonoBehaviour {
@@ -51,7 +65,7 @@ public class TargetScript : MonoBehaviour {
 	private GameObject instructions;
 	private Quaternion restingRotation;
 	System.Random rnd;
-	OVRCameraRig rig;
+	float size;
 	
 	private GameObject greenTarget;
 
@@ -67,18 +81,26 @@ public class TargetScript : MonoBehaviour {
         metrics = new List<Metric>();
         state = State.HEALTH_WARNING;
 		rnd = new System.Random ();
-        Debug.Log("Warming up...");
-		rig = GetComponentInChildren<OVRCameraRig>();
+		List<float> targetSizes = new List<float>();
+		targetSizes.Add (0.25f);
+		targetSizes.Add (0.45f);
+		targetSizes.Add (0.75f);
+		targetSizes.Add (1f);
+		int idx = rnd.Next (targetSizes.Count);
+		size = targetSizes[idx];
+		Debug.Log ("target size is ");
+		Debug.Log (size);
+		Debug.Log("Warming up...");
 		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
 	// Logic to determine whether the user is currently looking at the target.
 	// If true, hit will store the results of the RaycastHit.
-	bool lookingAtSomeTarget(Transform cameraTransform, out RaycastHit hit) {
-		float length = 12.0f;
-		Vector3 rayDirection = cameraTransform.TransformDirection (Vector3.forward);
-		Vector3 rayStart = cameraTransform.position + rayDirection;
-		Debug.DrawRay(rayStart, rayDirection * length, Color.green);
+	bool lookingAtSomeTarget(Quaternion cameraTransform, out RaycastHit hit) {
+		float length = 20.0f;
+		Vector3 rayDirection = cameraTransform * Vector3.forward;
+		Vector3 rayStart = Vector3.zero;
+		Debug.DrawRay(rayStart, rayDirection * length, Color.green, 1000);
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
 
@@ -91,7 +113,6 @@ public class TargetScript : MonoBehaviour {
 		// Maybe one day I will become a good programmer or learn more about Unity
 		// but for the moment I am going to just draw the text in the world so I don't
 		// give up on the project.
-		Debug.Log("Drawing Recenter dialog.");
         string loading = "Get comfy and then\npress any key.";
 		recenterDialog = new GameObject();
 		recenterDialog.AddComponent<TextMesh>();
@@ -108,16 +129,13 @@ public class TargetScript : MonoBehaviour {
 		recenterDialog.GetComponent<TextMesh>().text = loading;
 		recenterDialog.GetComponent<TextMesh>().alignment = TextAlignment.Center;
 		recenterDialog.SetActive (true);
-		Debug.Log("Stereo Box should be visible.");
     }
 
     void clearRecenterDialog() {
-        Debug.Log("Clearing recenter dialog.");
 		recenterDialog.SetActive (false);
     }
 
     void drawInstructions(Quaternion cameraPosition) {
-        Debug.Log("Drawing instructions.");
 		string instructionsText = "Look at the green square and press spacebar.\nThen look at the red square and press spacebar.";
 		instructions = new GameObject();
 		instructions.AddComponent<TextMesh>();
@@ -136,12 +154,11 @@ public class TargetScript : MonoBehaviour {
 		instructions.GetComponent<TextMesh>().text = instructionsText;
 		instructions.GetComponent<TextMesh>().alignment = TextAlignment.Center;
 		instructions.SetActive (true);
-		Debug.Log("Stereo Box should be visible.");
 
     }
 
     void clearInstructions() {
-        Debug.Log("Clearing instructions.");
+		instructions.SetActive (false);
     }
 
 	/*
@@ -159,11 +176,7 @@ public class TargetScript : MonoBehaviour {
 			s = RandomSphere.PointOnSphere (sphereRadius);
 			diff = s.normalized - lookDirection;
 			count++;
-			Debug.Log (diff);
-			Debug.Log (Vector3.Angle (s, lookDirection));
 		}
-		Debug.Log (Vector3.Angle (s, lookDirection));
-		Debug.Log (s);
 		return s;
 	}
 
@@ -183,16 +196,19 @@ public class TargetScript : MonoBehaviour {
 		return t;
 	}
 
-    void drawSingleInputGame(Quaternion startRotation) {
+    void drawSingleInputGame(Quaternion startRotation, float targetSize) {
 		Debug.Log ("Drawing single input game.");
 		greenTarget = createTarget(startRotation);
 		greenTarget.renderer.material.color = green;
 		greenTarget.transform.localScale = new Vector3 (3, 3, 1);
 
 		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
-		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
+
+		redTarget.transform.localScale = new Vector3 (size, size, 1);
 		redTarget.renderer.material.color = red;
-		// XXX surely there is a better way to write this
+
+		// XXX surely there is a better way to write this. Put the red square randomly to 
+		// the left or the right of the green target 
 		int r = rnd.Next(0, 2);
 		int arc;
 		if (r == 0) {
@@ -249,9 +265,8 @@ public class TargetScript : MonoBehaviour {
 
     }
 
-    bool matches(RaycastHit hit, Target t) {
-		Debug.Log (hit);
-		return true;
+    bool matches(RaycastHit hit, GameObject t) {
+		return hit.collider.gameObject.GetInstanceID () == t.GetInstanceID ();
     }
 
     bool isDesiredButton() {
@@ -270,12 +285,25 @@ public class TargetScript : MonoBehaviour {
 
     }
 
-    bool gameOver() {
-        return false;
-    }
-
-    void publishMetrics(List<Metric> metrics) {
-
+    void displayGameOver() {
+		instructions.SetActive (true);
+		instructions.GetComponent<TextMesh> ().text = "Game over! Thanks for playing!";
+	}
+	
+	void publishMetrics(List<Metric> metrics) {
+		// MemoryStream stream1 = new MemoryStream();
+		string output = JsonConvert.SerializeObject (metrics, new JsonSerializerSettings(){ReferenceLoopHandling = ReferenceLoopHandling.Ignore});
+		// Xxx don't have this block everything
+		var client = new RestClient("https://www.twentymilliseconds.com");
+		var request = new RestRequest(Method.POST);
+		request.RequestFormat = DataFormat.Json;
+		request.Resource = "api/targets/v1/metrics";
+		request.AddParameter("application/json", output, ParameterType.RequestBody);
+		// GlobalProxySelection.Select = new WebProxy("127.0.0.1", 8888);
+		// XXX security is hard, let's go shopping
+		ServicePointManager.ServerCertificateValidationCallback +=
+			(sender, certificate, chain, sslPolicyErrors) => true;
+		IRestResponse<MetricsResponse> resp = client.Execute<MetricsResponse>(request);
     }
 
 	void clearTargets() {
@@ -307,7 +335,8 @@ public class TargetScript : MonoBehaviour {
 			Debug.Log("Clearing instructions. Moving to single state game.");
 			clearInstructions();
             state = State.SINGLE_INPUT_GAME;
-            drawSingleInputGame(restingRotation);
+
+            drawSingleInputGame(restingRotation, size);
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
@@ -316,36 +345,41 @@ public class TargetScript : MonoBehaviour {
 				RaycastHit hit;
 				OVRPose ovp = OVRManager.display.GetHeadPose();
 				if (lookingAtSomeTarget(ovp.orientation, out hit)) {
-	                if (matches(hit, Target.GREEN_BUTTON)) {
+	                if (matches (hit, greenTarget)) {
 						Debug.Log ("Matched Green button.");
 	                    startTime = Time.time;
-	                } else if (matches(hit, Target.RED_BUTTON)) {
+	                } else if (matches(hit, redTarget)) {
+						Debug.Log ("Matched Red button");
 	                    float timeElapsed = Time.time - startTime;
 	                    // replace null with cameraPosition
-	                    Metric m = new Metric(timeElapsed, true, null, "");
+	                    Metric m = new Metric(timeElapsed, true, Quaternion.identity, greenTarget.transform.position, redTarget.transform.position, size);
 	                    metrics.Add(m);
 						clearTarget = true;
-	                } else {
-						Debug.Log ("Missed!");
-	                    float timeElapsed = Time.time - startTime;
-	                    Metric m = new Metric(timeElapsed, false, null, "");
-	                    metrics.Add(m);
-						clearTarget = true;
-	                }
+	                } 
+				} else {
+					// You only get one chance at each target :(
+					Debug.Log ("Missed!");
+	                float timeElapsed = Time.time - startTime;
+	                Metric m = new Metric(timeElapsed, false, ovp.orientation, greenTarget.transform.position, redTarget.transform.position, size);
+	                metrics.Add(m);	
+					clearTarget = true;
+	            }
 
-					if (clearTarget) {
-						clearTargets();
+				if (clearTarget) {
+					clearTargets();
 
-						gamesPlayed++;
-						if (gamesPlayed < 5) {
-							drawSingleInputGame(restingRotation);
-						} 
-						/* XXX
-						 * else {
-							state = State.MULTI_INPUT_GAME;
-							drawMultiInputGame();
-						}*/
+					gamesPlayed++;
+					if (gamesPlayed < 5) {
+						drawSingleInputGame(restingRotation, size);
+					} else {
+						publishMetrics(metrics);
+						displayGameOver();
 					}
+					/* XXX
+					 * else {
+						state = State.MULTI_INPUT_GAME;
+						drawMultiInputGame();
+					}*/
 				}
 			}
 			
@@ -368,7 +402,7 @@ public class TargetScript : MonoBehaviour {
                     metrics.Add(m);
                     startTime = Time.time;
                     if (gameOver()) {
-                        publishMetrics(metrics);
+
                         state = State.GAME_OVER;
                     }
                 } */
