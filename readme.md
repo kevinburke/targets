@@ -35,9 +35,6 @@ trackers will probably go out of date soon.
 - Create a target-looking object in Photoshop
 - Add "distractor" targets around the red target
 
-- Anonymous data publisher
-- Server side code to manage the data (maybe just dumping to text files at first)
-
 ### Installing/Building
 
 I haven't actually tested this, but you should be able to load this folder as
