@@ -2,6 +2,7 @@
 using System.Collections;
 using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
@@ -13,14 +14,21 @@ public class Metric {
     public Quaternion cameraRotation;
 	public Vector3 greenTargetPosition;
 	public Vector3 redTargetPosition;
+	public float targetSize;
 
-    public Metric(float t, bool h, Quaternion cr, Vector3 gtp, Vector3 rtp) {
+	public Metric(float t, bool h, Quaternion cr, Vector3 gtp, Vector3 rtp, float ts) {
         time = t;
         hit = h;
         cameraRotation = cr;
 		redTargetPosition = rtp;
 		greenTargetPosition = gtp;
+		targetSize = ts;
     }
+}
+
+public class MetricsResponse {
+	public bool success;
+	public int status;
 }
 
 public class TargetScript : MonoBehaviour {
@@ -57,6 +65,7 @@ public class TargetScript : MonoBehaviour {
 	private GameObject instructions;
 	private Quaternion restingRotation;
 	System.Random rnd;
+	float size;
 	
 	private GameObject greenTarget;
 
@@ -72,7 +81,16 @@ public class TargetScript : MonoBehaviour {
         metrics = new List<Metric>();
         state = State.HEALTH_WARNING;
 		rnd = new System.Random ();
-        Debug.Log("Warming up...");
+		List<float> targetSizes = new List<float>();
+		targetSizes.Add (0.25f);
+		targetSizes.Add (0.45f);
+		targetSizes.Add (0.75f);
+		targetSizes.Add (1f);
+		int idx = rnd.Next (targetSizes.Count);
+		size = targetSizes[idx];
+		Debug.Log ("target size is ");
+		Debug.Log (size);
+		Debug.Log("Warming up...");
 		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
@@ -82,7 +100,6 @@ public class TargetScript : MonoBehaviour {
 		float length = 20.0f;
 		Vector3 rayDirection = cameraTransform * Vector3.forward;
 		Vector3 rayStart = Vector3.zero;
-		Debug.Log (rayDirection);
 		Debug.DrawRay(rayStart, rayDirection * length, Color.green, 1000);
 		return Physics.Raycast(rayStart, rayDirection, out hit, length);
 	}
@@ -141,7 +158,7 @@ public class TargetScript : MonoBehaviour {
     }
 
     void clearInstructions() {
-        Debug.Log("Clearing instructions.");
+		instructions.SetActive (false);
     }
 
 	/*
@@ -179,14 +196,15 @@ public class TargetScript : MonoBehaviour {
 		return t;
 	}
 
-    void drawSingleInputGame(Quaternion startRotation) {
+    void drawSingleInputGame(Quaternion startRotation, float targetSize) {
 		Debug.Log ("Drawing single input game.");
 		greenTarget = createTarget(startRotation);
 		greenTarget.renderer.material.color = green;
 		greenTarget.transform.localScale = new Vector3 (3, 3, 1);
 
 		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
-		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
+
+		redTarget.transform.localScale = new Vector3 (size, size, 1);
 		redTarget.renderer.material.color = red;
 
 		// XXX surely there is a better way to write this. Put the red square randomly to 
@@ -267,20 +285,25 @@ public class TargetScript : MonoBehaviour {
 
     }
 
-    bool gameOver() {
-        return false;
-    }
-
-    void publishMetrics(List<Metric> metrics) {
+    void displayGameOver() {
+		instructions.SetActive (true);
+		instructions.GetComponent<TextMesh> ().text = "Game over! Thanks for playing!";
+	}
+	
+	void publishMetrics(List<Metric> metrics) {
 		// MemoryStream stream1 = new MemoryStream();
 		string output = JsonConvert.SerializeObject (metrics, new JsonSerializerSettings(){ReferenceLoopHandling = ReferenceLoopHandling.Ignore});
-		// Xxx don't have this block;
+		// Xxx don't have this block everything
 		var client = new RestClient("https://www.twentymilliseconds.com");
-		var request = new RestRequest();
+		var request = new RestRequest(Method.POST);
+		request.RequestFormat = DataFormat.Json;
 		request.Resource = "api/targets/v1/metrics";
 		request.AddParameter("application/json", output, ParameterType.RequestBody);
-		RestResponse resp = client.Execute (request);
-		Debug.Log (resp);
+		// GlobalProxySelection.Select = new WebProxy("127.0.0.1", 8888);
+		// XXX security is hard, let's go shopping
+		ServicePointManager.ServerCertificateValidationCallback +=
+			(sender, certificate, chain, sslPolicyErrors) => true;
+		IRestResponse<MetricsResponse> resp = client.Execute<MetricsResponse>(request);
     }
 
 	void clearTargets() {
@@ -312,7 +335,8 @@ public class TargetScript : MonoBehaviour {
 			Debug.Log("Clearing instructions. Moving to single state game.");
 			clearInstructions();
             state = State.SINGLE_INPUT_GAME;
-            drawSingleInputGame(restingRotation);
+
+            drawSingleInputGame(restingRotation, size);
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
@@ -328,7 +352,7 @@ public class TargetScript : MonoBehaviour {
 						Debug.Log ("Matched Red button");
 	                    float timeElapsed = Time.time - startTime;
 	                    // replace null with cameraPosition
-	                    Metric m = new Metric(timeElapsed, true, Quaternion.identity, greenTarget.transform.position, redTarget.transform.position);
+	                    Metric m = new Metric(timeElapsed, true, Quaternion.identity, greenTarget.transform.position, redTarget.transform.position, size);
 	                    metrics.Add(m);
 						clearTarget = true;
 	                } 
@@ -336,7 +360,7 @@ public class TargetScript : MonoBehaviour {
 					// You only get one chance at each target :(
 					Debug.Log ("Missed!");
 	                float timeElapsed = Time.time - startTime;
-	                Metric m = new Metric(timeElapsed, false, ovp.orientation, greenTarget.transform.position, redTarget.transform.position);
+	                Metric m = new Metric(timeElapsed, false, ovp.orientation, greenTarget.transform.position, redTarget.transform.position, size);
 	                metrics.Add(m);	
 					clearTarget = true;
 	            }
@@ -345,10 +369,11 @@ public class TargetScript : MonoBehaviour {
 					clearTargets();
 
 					gamesPlayed++;
-					if (gamesPlayed < 2) {
-						drawSingleInputGame(restingRotation);
+					if (gamesPlayed < 5) {
+						drawSingleInputGame(restingRotation, size);
 					} else {
 						publishMetrics(metrics);
+						displayGameOver();
 					}
 					/* XXX
 					 * else {
