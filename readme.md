@@ -30,19 +30,19 @@ Devices"][paper] is a good resource.
 This file will be used in lieu of an issue tracker, and like most issue
 trackers will probably go out of date soon.
 
-- Initial "Press to Recenter Display screen", and graphics which compute based on this setting
 - Effect to blow up the object when you hit spacebar and look at it.
 - Final Score/Leaderboard/Play Again screen
-- Show the score on each quad (a number that decreases as time increases)
 - Create a target-looking object in Photoshop
+- Add "distractor" targets around the red target
+
 - Anonymous data publisher
 - Server side code to manage the data (maybe just dumping to text files at first)
 
 ### Installing/Building
 
-I haven't actually tested this, but you should be able to load this folder as a
-project in Unity and run it. You may also need the Oculus plugin. The important
-code is in TargetScript.cs.
+I haven't actually tested this, but you should be able to load this folder as
+a project in Unity and run it. You may also need the Oculus plugin (version
+0.4.3). The important game logic is in TargetScript.cs.
 
 ## API
 
@@ -55,7 +55,8 @@ single-target rounds and one multi-input round.
         {
             "time": 0.5,
             "hit": false,
-            "camera_rotation": [4.5, 4, 89]
+            "camera_rotation": [4.5, 4, 89],
+            "misses": 3
         },
         ...
     ],
