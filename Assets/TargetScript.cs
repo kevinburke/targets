@@ -1,19 +1,25 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.IO;
 using System.Collections.Generic;
+
+using Newtonsoft.Json;
+using RestSharp;
 
 public class Metric {
     public float time;
     public bool hit;
-    public float[] cameraRotation;
-    public string target;
+    public Quaternion cameraRotation;
+	public Vector3 greenTargetPosition;
+	public Vector3 redTargetPosition;
 
-    public Metric(float t, bool h, float[] cr, string target_) {
+    public Metric(float t, bool h, Quaternion cr, Vector3 gtp, Vector3 rtp) {
         time = t;
         hit = h;
         cameraRotation = cr;
-        target = target_;
+		redTargetPosition = rtp;
+		greenTargetPosition = gtp;
     }
 }
 
@@ -51,7 +57,6 @@ public class TargetScript : MonoBehaviour {
 	private GameObject instructions;
 	private Quaternion restingRotation;
 	System.Random rnd;
-	OVRCameraRig rig;
 	
 	private GameObject greenTarget;
 
@@ -68,7 +73,6 @@ public class TargetScript : MonoBehaviour {
         state = State.HEALTH_WARNING;
 		rnd = new System.Random ();
         Debug.Log("Warming up...");
-		rig = GetComponentInChildren<OVRCameraRig>();
 		// GUIRenderObject = GameObject.Instantiate(Resources.Load("OVRGUIObjectMain")) as GameObject;
 	}
 
@@ -92,7 +96,6 @@ public class TargetScript : MonoBehaviour {
 		// Maybe one day I will become a good programmer or learn more about Unity
 		// but for the moment I am going to just draw the text in the world so I don't
 		// give up on the project.
-		Debug.Log("Drawing Recenter dialog.");
         string loading = "Get comfy and then\npress any key.";
 		recenterDialog = new GameObject();
 		recenterDialog.AddComponent<TextMesh>();
@@ -109,16 +112,13 @@ public class TargetScript : MonoBehaviour {
 		recenterDialog.GetComponent<TextMesh>().text = loading;
 		recenterDialog.GetComponent<TextMesh>().alignment = TextAlignment.Center;
 		recenterDialog.SetActive (true);
-		Debug.Log("Stereo Box should be visible.");
     }
 
     void clearRecenterDialog() {
-        Debug.Log("Clearing recenter dialog.");
 		recenterDialog.SetActive (false);
     }
 
     void drawInstructions(Quaternion cameraPosition) {
-        Debug.Log("Drawing instructions.");
 		string instructionsText = "Look at the green square and press spacebar.\nThen look at the red square and press spacebar.";
 		instructions = new GameObject();
 		instructions.AddComponent<TextMesh>();
@@ -137,7 +137,6 @@ public class TargetScript : MonoBehaviour {
 		instructions.GetComponent<TextMesh>().text = instructionsText;
 		instructions.GetComponent<TextMesh>().alignment = TextAlignment.Center;
 		instructions.SetActive (true);
-		Debug.Log("Stereo Box should be visible.");
 
     }
 
@@ -160,11 +159,7 @@ public class TargetScript : MonoBehaviour {
 			s = RandomSphere.PointOnSphere (sphereRadius);
 			diff = s.normalized - lookDirection;
 			count++;
-			Debug.Log (diff);
-			Debug.Log (Vector3.Angle (s, lookDirection));
 		}
-		Debug.Log (Vector3.Angle (s, lookDirection));
-		Debug.Log (s);
 		return s;
 	}
 
@@ -189,7 +184,6 @@ public class TargetScript : MonoBehaviour {
 		greenTarget = createTarget(startRotation);
 		greenTarget.renderer.material.color = green;
 		greenTarget.transform.localScale = new Vector3 (3, 3, 1);
-		Debug.Log (greenTarget.GetInstanceID ());
 
 		redTarget = GameObject.CreatePrimitive (PrimitiveType.Quad);
 		redTarget.transform.localScale = new Vector3 (0.75f, 0.75f, 1);
@@ -254,8 +248,6 @@ public class TargetScript : MonoBehaviour {
     }
 
     bool matches(RaycastHit hit, GameObject t) {
-		Debug.Log (hit.collider.gameObject.GetInstanceID ());
-		Debug.Log (hit.collider.attachedRigidbody);
 		return hit.collider.gameObject.GetInstanceID () == t.GetInstanceID ();
     }
 
@@ -280,7 +272,15 @@ public class TargetScript : MonoBehaviour {
     }
 
     void publishMetrics(List<Metric> metrics) {
-
+		// MemoryStream stream1 = new MemoryStream();
+		string output = JsonConvert.SerializeObject (metrics, new JsonSerializerSettings(){ReferenceLoopHandling = ReferenceLoopHandling.Ignore});
+		// Xxx don't have this block;
+		var client = new RestClient("https://www.twentymilliseconds.com");
+		var request = new RestRequest();
+		request.Resource = "api/targets/v1/metrics";
+		request.AddParameter("application/json", output, ParameterType.RequestBody);
+		RestResponse resp = client.Execute (request);
+		Debug.Log (resp);
     }
 
 	void clearTargets() {
@@ -313,7 +313,6 @@ public class TargetScript : MonoBehaviour {
 			clearInstructions();
             state = State.SINGLE_INPUT_GAME;
             drawSingleInputGame(restingRotation);
-			Debug.Log ("done drawing single input game.");
         } else if (state == State.SINGLE_INPUT_GAME) {
             // in game mode.
             if (Input.GetKeyDown("space")) {
@@ -322,11 +321,6 @@ public class TargetScript : MonoBehaviour {
 				RaycastHit hit;
 				OVRPose ovp = OVRManager.display.GetHeadPose();
 				if (lookingAtSomeTarget(ovp.orientation, out hit)) {
-					Debug.Log (hit);
-					Debug.Log (hit.collider);
-					Debug.Log (ovp.orientation);
-					Debug.Log (hit.collider.tag);
-					Debug.Log (matches (hit, greenTarget));
 	                if (matches (hit, greenTarget)) {
 						Debug.Log ("Matched Green button.");
 	                    startTime = Time.time;
@@ -334,30 +328,33 @@ public class TargetScript : MonoBehaviour {
 						Debug.Log ("Matched Red button");
 	                    float timeElapsed = Time.time - startTime;
 	                    // replace null with cameraPosition
-	                    Metric m = new Metric(timeElapsed, true, null, "");
+	                    Metric m = new Metric(timeElapsed, true, Quaternion.identity, greenTarget.transform.position, redTarget.transform.position);
 	                    metrics.Add(m);
 						clearTarget = true;
-	                } else {
-						Debug.Log ("Missed!");
-	                    float timeElapsed = Time.time - startTime;
-	                    Metric m = new Metric(timeElapsed, false, null, "");
-	                    metrics.Add(m);
-						clearTarget = true;
-	                }
+	                } 
+				} else {
+					// You only get one chance at each target :(
+					Debug.Log ("Missed!");
+	                float timeElapsed = Time.time - startTime;
+	                Metric m = new Metric(timeElapsed, false, ovp.orientation, greenTarget.transform.position, redTarget.transform.position);
+	                metrics.Add(m);	
+					clearTarget = true;
+	            }
 
-					if (clearTarget) {
-						clearTargets();
+				if (clearTarget) {
+					clearTargets();
 
-						gamesPlayed++;
-						if (gamesPlayed < 5) {
-							drawSingleInputGame(restingRotation);
-						} 
-						/* XXX
-						 * else {
-							state = State.MULTI_INPUT_GAME;
-							drawMultiInputGame();
-						}*/
+					gamesPlayed++;
+					if (gamesPlayed < 2) {
+						drawSingleInputGame(restingRotation);
+					} else {
+						publishMetrics(metrics);
 					}
+					/* XXX
+					 * else {
+						state = State.MULTI_INPUT_GAME;
+						drawMultiInputGame();
+					}*/
 				}
 			}
 			
@@ -380,7 +377,7 @@ public class TargetScript : MonoBehaviour {
                     metrics.Add(m);
                     startTime = Time.time;
                     if (gameOver()) {
-                        publishMetrics(metrics);
+
                         state = State.GAME_OVER;
                     }
                 } */
